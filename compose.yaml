@@ -1,0 +1,10 @@
+services:
+  bot:
+    build: .
+    restart: unless-stopped
+    env_file: .env
+    volumes:
+      - pearl-data:/app/data
+    stop_grace_period: 30s
+volumes:
+  pearl-data:
