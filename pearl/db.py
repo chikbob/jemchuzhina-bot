@@ -48,6 +48,7 @@ class Database:
                     CHECK(role IN ('owner','admin','manager')));
                 CREATE TABLE IF NOT EXISTS admin_logins(
                     user_id INTEGER PRIMARY KEY, expires REAL NOT NULL, password_tag TEXT NOT NULL);
+                CREATE TABLE IF NOT EXISTS web_login_attempts(client TEXT PRIMARY KEY, failures INTEGER NOT NULL DEFAULT 0, locked_until REAL NOT NULL DEFAULT 0);
                 CREATE TABLE IF NOT EXISTS login_attempts(
                     user_id INTEGER PRIMARY KEY, failures INTEGER NOT NULL DEFAULT 0,
                     locked_until REAL NOT NULL DEFAULT 0);
@@ -102,6 +103,13 @@ class Database:
                 c.execute(
                     "ALTER TABLE slots ADD COLUMN deleted INTEGER NOT NULL DEFAULT 0"
                 )
+
+            c.executescript("""
+                CREATE INDEX IF NOT EXISTS booking_user_history ON bookings(user_id,created);
+                CREATE INDEX IF NOT EXISTS booking_slot_status ON bookings(slot_id,status);
+                CREATE INDEX IF NOT EXISTS slots_schedule ON slots(starts,service,deleted);
+                CREATE INDEX IF NOT EXISTS leads_inbox ON leads(status,id);
+            """)
 
     @contextmanager
     def connect(self):

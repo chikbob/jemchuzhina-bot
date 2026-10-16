@@ -139,6 +139,8 @@ class WebhookTests(unittest.TestCase):
         self.assertFalse(db.rows("SELECT * FROM api_outbox WHERE delivered=0"))
 
     def test_health_is_public_but_webhook_requires_correct_secret(self):
+        self.assertEqual(self.client.get("/").status_code, 302)
+        self.assertEqual(self.client.get("/").location, "/admin/")
         self.assertEqual(self.client.get("/health").status_code, 200)
         self.assertEqual(
             self.client.post("/telegram/webhook", json=self.payload).status_code, 403
@@ -272,6 +274,41 @@ class WebhookTests(unittest.TestCase):
             response = self.post(callback("calclear"))
             self.assertEqual(response.json["text"], "Выбор очищен")
             self.assertEqual(factory.call_count, 1)
+
+    def test_deleted_callback_message_is_acknowledged_without_restarting_form(self):
+        client = create_app(self.config, self.secret).test_client()
+        message = {**self.payload["message"], "date": 0}
+        update = {
+            "update_id": 124,
+            "callback_query": {
+                "id": "expired-callback",
+                "from": message["from"],
+                "chat_instance": "x",
+                "message": message,
+                "data": "slot:1",
+            },
+        }
+        session = FakeSession()
+        with patch(
+            "pearl.web.create_bot",
+            return_value=Bot(
+                "123456789:abcdefghijklmnopqrstuvwxyz123456789", session=session
+            ),
+        ):
+            response = client.post(
+                "/telegram/webhook",
+                json=update,
+                headers={"X-Telegram-Bot-Api-Secret-Token": self.secret},
+            )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json["method"], "answerCallbackQuery")
+        self.assertEqual(session.calls, [])
+        self.assertEqual(
+            Database(self.config.database, self.config.timezone).rows(
+                "SELECT * FROM sessions"
+            ),
+            [],
+        )
 
 
 if __name__ == "__main__":

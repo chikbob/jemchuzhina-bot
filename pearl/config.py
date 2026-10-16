@@ -16,6 +16,8 @@ class Config:
     address: str
     phone: str
     admin_password: str
+    web_panel_password: str = ""
+    web_cookie_secure: bool = True
 
     @classmethod
     def load(cls):
@@ -38,4 +40,6 @@ class Config:
             os.getenv("SALON_ADDRESS", "Мариуполь, ул. Металлургов, 145"),
             os.getenv("SALON_PHONE", "+79495140330"),
             password,
+            os.getenv("WEB_PANEL_PASSWORD", "").strip(),
+            os.getenv("WEB_COOKIE_SECURE", "1") != "0",
         )

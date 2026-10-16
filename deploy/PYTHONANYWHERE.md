@@ -32,6 +32,7 @@ bash deploy/pythonanywhere_setup.sh
 ```bash
 .venv/bin/python - <<'PY'
 import sqlite3
+from contextlib import closing
 import time
 from pathlib import Path
 
@@ -39,8 +40,8 @@ backup_dir = Path('data/backups')
 backup_dir.mkdir(exist_ok=True)
 backup_dir.chmod(0o700)
 backup = backup_dir / f'before-update-{int(time.time())}.sqlite3'
-with sqlite3.connect('data/pearl.sqlite3') as source:
-    with sqlite3.connect(backup) as target:
+with closing(sqlite3.connect('data/pearl.sqlite3')) as source:
+    with closing(sqlite3.connect(backup)) as target:
         source.backup(target)
 backup.chmod(0o600)
 print('Backup created')

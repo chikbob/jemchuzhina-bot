@@ -84,6 +84,20 @@ class InteractionMiddleware(BaseMiddleware):
         msg = event.message if isinstance(event, CallbackQuery) else event
         if not msg or msg.chat.type != "private":
             return await handler(event, data)
+        cutoff = int(self.db.setting("reset_cutoff", "0"))
+        timestamp = msg.date.timestamp() if isinstance(msg.date, datetime) else 0
+        if timestamp == 0 or timestamp < cutoff:
+            if isinstance(event, CallbackQuery):
+                ack = webhook_ack.get()
+                if ack is not None:
+                    ack.update(
+                        method="answerCallbackQuery",
+                        callback_query_id=event.id,
+                        text="Данные обновлены. Откройте /start.",
+                    )
+                else:
+                    await event.answer("Данные обновлены. Откройте /start.")
+            return
         bot = data["bot"]
         if not getattr(bot.session, "_pearl_ui", False):
             bot.session.middleware(UIRequestMiddleware())

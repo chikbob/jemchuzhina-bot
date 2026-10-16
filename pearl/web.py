@@ -11,7 +11,7 @@ from pathlib import Path
 from aiogram import Dispatcher
 from aiogram.fsm.storage.memory import SimpleEventIsolation
 from aiogram.types import Update
-from flask import Flask, request
+from flask import Flask, redirect, request
 from pydantic import ValidationError
 
 from .bot import build_router, deliver, update_publication
@@ -20,6 +20,7 @@ from .db import Database
 from .interaction import flush_ui, webhook_ack
 from .storage import SQLiteStorage
 from .transport import create_bot
+from .web_panel import register_panel
 
 log = logging.getLogger(__name__)
 
@@ -110,6 +111,11 @@ def create_app(config=None, secret=None, processor=None):
     process = processor or runtime.process
     app = Flask(__name__)
     app.config["MAX_CONTENT_LENGTH"] = 1024 * 1024
+    register_panel(app, db, config, secret)
+
+    @app.get("/")
+    def landing():
+        return redirect("/admin/")
 
     @app.get("/health")
     def health():

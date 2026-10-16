@@ -2,6 +2,7 @@ import asyncio
 import tempfile
 import unittest
 from concurrent.futures import ThreadPoolExecutor
+from contextlib import closing
 from datetime import datetime, timedelta
 from types import SimpleNamespace
 from zoneinfo import ZoneInfo
@@ -220,7 +221,7 @@ class LegacyMigrationTests(unittest.TestCase):
 
         with tempfile.TemporaryDirectory() as tmp:
             path = tmp + "/legacy.sqlite"
-            with sqlite3.connect(path) as c:
+            with closing(sqlite3.connect(path)) as c:
                 c.executescript("""
                     CREATE TABLE slots(id INTEGER PRIMARY KEY,service TEXT NOT NULL,starts TEXT NOT NULL,capacity INTEGER NOT NULL,enabled INTEGER NOT NULL DEFAULT 1,UNIQUE(service,starts));
                     CREATE TABLE bookings(id INTEGER PRIMARY KEY,slot_id INTEGER NOT NULL,user_id INTEGER NOT NULL,name TEXT NOT NULL,phone TEXT NOT NULL,note TEXT NOT NULL DEFAULT '',photo TEXT NOT NULL DEFAULT '',status TEXT NOT NULL,created TEXT NOT NULL);
